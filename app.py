@@ -1,8 +1,3 @@
-"""REPO / LAB — self-contained, synthetic repo desk workflow demonstration.
-
-Run locally: python -m streamlit run app.py
-All positions, rates, cash and P&L samples are synthetic. No HSBC affiliation.
-"""
 from __future__ import annotations
 
 from datetime import date
@@ -26,8 +21,7 @@ from analytics import (
     grouped_portfolio,
     portfolio_summary,
     reconcile,
-    repo_interest,
-)
+    repo_interest)
 
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
@@ -44,8 +38,7 @@ st.set_page_config(
     page_title="Repo Funding & P&L Analytics | REPO / LAB",
     page_icon="📈",
     layout="wide",
-    initial_sidebar_state="expanded",
-)
+    initial_sidebar_state="expanded")
 
 
 st.markdown("""
@@ -111,8 +104,7 @@ def chart_style(fig: go.Figure, height: int = 275) -> go.Figure:
         margin=dict(l=10, r=54, t=22, b=18),
         showlegend=False,
         xaxis=dict(showgrid=False, linecolor="#DED8CF", zeroline=False),
-        yaxis=dict(gridcolor="#EBE5DE", zeroline=False),
-    )
+        yaxis=dict(gridcolor="#EBE5DE", zeroline=False),)
     return fig
 
 
@@ -371,8 +363,7 @@ def get_ecb_rates():
 
         if "currency" in element.attrib:
             rates[element.attrib["currency"]] = float(
-                element.attrib["rate"]
-            )
+                element.attrib["rate"])
 
     if not fixing_date or not all(
         ccy in rates for ccy in ["USD", "GBP", "CHF", "JPY"]
@@ -392,8 +383,7 @@ def render_fx_swap() -> None:
     currencies = ["USD", "GBP", "CHF", "JPY"]
     pairs = (
         [f"EUR/{ccy}" for ccy in currencies]
-        + [f"{ccy}/EUR" for ccy in currencies]
-    )
+        + [f"{ccy}/EUR" for ccy in currencies])
 
     # Get ECB reference rates
     try:
@@ -406,8 +396,7 @@ def render_fx_swap() -> None:
             "USD": 1.08,
             "GBP": 0.85,
             "CHF": 0.93,
-            "JPY": 170.00
-        }
+            "JPY": 170.00}
 
     pair = st.selectbox("Currency pair", pairs, key="fx_pair")
     base, quote_ccy = pair.split("/")
@@ -418,17 +407,15 @@ def render_fx_swap() -> None:
 
     spot_reference = (
         eur_spot if base == "EUR"
-        else 1 / eur_spot
-    )
+        else 1 / eur_spot)
 
-    # Illustrative funding rates, NOT current market quotes
+    # Illustrative funding rates
     rate_defaults = {
         "EUR": 2.50,
         "USD": 4.00,
         "GBP": 3.75,
         "CHF": 1.00,
-        "JPY": 0.75
-    }
+        "JPY": 0.75}
 
     # Simplified currency day-count conventions
     day_count = {
@@ -436,8 +423,7 @@ def render_fx_swap() -> None:
         "USD": 360,
         "GBP": 365,
         "CHF": 360,
-        "JPY": 365
-    }
+        "JPY": 360}
 
     # Reset inputs when the currency pair or ECB fixing changes
     selection = (pair, fixing_date)
@@ -454,8 +440,7 @@ def render_fx_swap() -> None:
     else:
         st.warning(
             "ECB data unavailable: sample spot values are used. "
-            "They can be changed manually."
-        )
+            "They can be changed manually")
 
     left, right = st.columns(2, gap="large")
 
@@ -465,8 +450,7 @@ def render_fx_swap() -> None:
             ["Buy base near", "Sell base near"],
             format_func=lambda x: x.replace("base", base),
             horizontal=True,
-            key="fx_side"
-        )
+            key="fx_side")
 
         notional_m = st.number_input(
             f"{base} notional ({base} millions)",
@@ -474,12 +458,10 @@ def render_fx_swap() -> None:
             max_value=10000.0,
             value=10.0,
             step=1.0,
-            key="fx_notional"
-        )
+            key="fx_notional")
 
         spot_decimals = 7 if base == "JPY" else (
-            3 if quote_ccy == "JPY" else 5
-        )
+            3 if quote_ccy == "JPY" else 5)
 
         spot = st.number_input(
             f"Spot {pair} ({quote_ccy} per {base})",
@@ -489,8 +471,7 @@ def render_fx_swap() -> None:
                 0.01 if quote_ccy == "JPY" else 0.0001
             ),
             format=f"%.{spot_decimals}f",
-            key="fx_spot"
-        )
+            key="fx_spot")
 
         base_rate = st.number_input(
             f"{base} money market rate (%)",
@@ -498,8 +479,7 @@ def render_fx_swap() -> None:
             max_value=30.0,
             step=0.05,
             format="%.3f",
-            key="fx_base_rate"
-        )
+            key="fx_base_rate")
 
     with right:
         quote_rate = st.number_input(
@@ -508,20 +488,17 @@ def render_fx_swap() -> None:
             max_value=30.0,
             step=0.05,
             format="%.3f",
-            key="fx_quote_rate"
-        )
+            key="fx_quote_rate")
 
         near = st.date_input(
             "Near settlement date",
             value=SNAPSHOT,
-            key="fx_near_date"
-        )
+            key="fx_near_date")
 
         far = st.date_input(
             "Far settlement date",
             value=date(2027, 2, 22),
-            key="fx_far_date"
-        )
+            key="fx_far_date")
 
     days = (far - near).days
 
@@ -532,11 +509,9 @@ def render_fx_swap() -> None:
     # Theoretical forward from covered-interest parity
     def forward_price(r_base, r_quote):
         factor_base = (
-            1 + r_base / 100 * days / day_count[base]
-        )
+            1 + r_base / 100 * days / day_count[base])
         factor_quote = (
-            1 + r_quote / 100 * days / day_count[quote_ccy]
-        )
+            1 + r_quote / 100 * days / day_count[quote_ccy])
 
         if factor_base <= 0 or factor_quote <= 0:
             raise ValueError("Invalid interest-rate factors")
@@ -559,15 +534,12 @@ def render_fx_swap() -> None:
     c1.metric("ACT tenor", f"{days} days")
     c2.metric(
         f"Forward {pair}",
-        f"{forward:.{spot_decimals}f}"
-    )
+        f"{forward:.{spot_decimals}f}")
     c3.metric("Swap points", f"{swap_points:+.2f} pips")
     c4.metric(
         f"{quote_ccy} − {base} rates",
-        f"{quote_rate - base_rate:+.2f} pp"
-    )
+        f"{quote_rate - base_rate:+.2f} pp")
 
-    # Near and far FX swap cashflows
     notional = notional_m * 1e6
     direction_sign = 1 if direction == "Buy base near" else -1
 
@@ -590,14 +562,12 @@ def render_fx_swap() -> None:
     for ccy in [base, quote_ccy]:
         col = f"{ccy} cashflow"
         display_flows[col] = display_flows[col].map(
-            lambda x: f"{x:+,.2f}"
-        )
+            lambda x: f"{x:+,.2f}")
 
     st.dataframe(
         display_flows,
         hide_index=True,
-        use_container_width=True
-    )
+        use_container_width=True)
 
     # Funding rate sensitivity
     st.markdown("#### What moves the forward points?")
@@ -608,8 +578,7 @@ def render_fx_swap() -> None:
     shocked_ccy = st.selectbox(
         "Shock the money market rate",
         [quote_ccy, base],
-        key="fx_shock_ccy"
-    )
+        key="fx_shock_ccy")
 
     scenarios = []
 
@@ -644,39 +613,32 @@ def render_fx_swap() -> None:
             y=scenarios["Points (pips)"],
             mode="lines+markers",
             line=dict(color=RED, width=3),
-            marker=dict(color=RED, size=8)
-        ))
+            marker=dict(color=RED, size=8)))
 
         fig.update_xaxes(
-            title=f"{shocked_ccy} rate shock (bp)"
-        )
+            title=f"{shocked_ccy} rate shock (bp)")
         fig.update_yaxes(title="Swap points (pips)")
 
         st.plotly_chart(
             chart_style(fig),
             use_container_width=True,
-            config={"displayModeBar": False}
-        )
+            config={"displayModeBar": False})
 
     with table_col:
         st.markdown("**Forward sensitivity table**")
 
         view = scenarios.copy()
         view["Forward"] = view["Forward"].map(
-            lambda v: f"{v:.{spot_decimals}f}"
-        )
+            lambda v: f"{v:.{spot_decimals}f}")
         view["Points (pips)"] = view["Points (pips)"].map(
-            lambda v: f"{v:+.2f}"
-        )
+            lambda v: f"{v:+.2f}")
         view["Delta points"] = view["Delta points"].map(
-            lambda v: f"{v:+.2f}"
-        )
+            lambda v: f"{v:+.2f}")
 
         st.dataframe(
             view,
             hide_index=True,
-            use_container_width=True
-        )
+            use_container_width=True)
 
 
     note(
@@ -756,7 +718,6 @@ def render_reconciliation() -> None:
     note("<b>Scope:</b> this is a simplified trade-level reconciliation via a full outer merge on unique trade ID. It identifies missing records and compares supplied P&L/signed cash balances with EUR tolerances")
 
 
-# ---------- App shell ----------
 st.sidebar.markdown('<div class="brand"> Desk <span>/</span> Cash Financing Solution Repo</div>', unsafe_allow_html=True)
 st.sidebar.caption("Personal Python project")
 st.sidebar.divider()
@@ -775,8 +736,7 @@ st.sidebar.markdown(
         Mathieu Voluntario
     </div>
     """,
-    unsafe_allow_html=True
-)
+    unsafe_allow_html=True)
 
 st.markdown("""
 <div class="hero">
