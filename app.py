@@ -43,39 +43,42 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-.stApp {
-    border-top: 5px solid #DB0011;
-}
+header[data-testid="stHeader"] {
+    border-top: 10px solid #DB0011 !important;}
 
 .hero {
-    background: #F9F1F2;
+    background: white;
     padding: 22px 24px;
     border-radius: 10px;
     border: 1px solid #E7D6D8;
-}
+    border-top: 4px solid #DB0011;}
 
 .hero h1 {
     font-size: 30px;
-    color: #2A2A2A;
-}
+    color: #2A2A2A;}
 
 .brand {
     font-size: 18px;
-    font-weight: bold;
-}
+    font-weight: bold;}
 
 .brand span {
-    color: #DB0011;
-}
+    color: #DB0011;}
 
 .note, .sidebar-note {
     padding: 12px;
     background: white;
-    border-left: 3px solid #DB0011;
-}
+    border-left: 3px solid #DB0011;}
+
+
+[data-testid="stMetric"] {
+    background: white;
+    padding: 18px;
+    border: 1px solid #E7D6D8;
+    border-top: 3px solid #DB0011;
+    border-radius: 10px;}
+
 </style>
 """, unsafe_allow_html=True)
-
 
 
 def eur(value: float, compact: bool = False, signed: bool = False, decimals: int = 2) -> str:
@@ -442,6 +445,19 @@ def render_fx_swap() -> None:
             "ECB data unavailable: sample spot values are used. "
             "They can be changed manually")
 
+
+     # Default settlement dates based on ECB fixing
+    reference_day = (
+        date.fromisoformat(fixing_date)
+        if fixing_date else date.today())
+    
+    near_default = (
+        pd.Timestamp(reference_day) + pd.offsets.BDay(2)).date()
+
+    far_default = (
+        pd.Timestamp(near_default) + pd.DateOffset(months=3)
+    ).date()
+    
     left, right = st.columns(2, gap="large")
 
     with left:
@@ -492,12 +508,12 @@ def render_fx_swap() -> None:
 
         near = st.date_input(
             "Near settlement date",
-            value=SNAPSHOT,
+            value=near_default,
             key="fx_near_date")
 
         far = st.date_input(
             "Far settlement date",
-            value=date(2027, 2, 22),
+            value=far_default,
             key="fx_far_date")
 
     days = (far - near).days
@@ -723,7 +739,14 @@ st.sidebar.caption("Personal Python project")
 st.sidebar.divider()
 st.sidebar.markdown("**Inside the tool**")
 st.sidebar.caption("Portfolio · Cash funding · FX swaps · Controls")
-st.sidebar.markdown('<div class="sidebar-note">Simulated positions and rates only.<br>No live quotes or bank data.</div>', unsafe_allow_html=True)
+st.sidebar.markdown(
+    """
+    <div class="sidebar-note">
+        • Synthetic trading data & illustrative pricing<br>
+        • Official ECB FX reference rates
+    </div>
+    """,
+    unsafe_allow_html=True)
 st.sidebar.divider()
 st.sidebar.markdown(
     """
